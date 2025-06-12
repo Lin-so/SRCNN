@@ -35,6 +35,7 @@ def train():
     # 训练循环
     best_psnr = 0
     train_losses = []
+    valid_losses = []
     valid_psnrs = []
     valid_ssims = []
     
@@ -65,22 +66,28 @@ def train():
         model.eval()
         avg_psnr = 0
         avg_ssim = 0
-        
+        valid_loss = 0
+
         with torch.no_grad():
             for lr_imgs, hr_imgs in valid_loader:
                 lr_imgs = lr_imgs.to(device)
                 hr_imgs = hr_imgs.to(device)
                 
                 outputs = model(lr_imgs)
+                loss = criterion(outputs, hr_imgs)
+
                 psnr = calculate_psnr(outputs, hr_imgs)
                 ssim = calculate_ssim(outputs, hr_imgs)
                 
+                valid_loss += loss.item()
                 avg_psnr += psnr.item()
                 avg_ssim += ssim.item()
-        
+
+        avg_loss = valid_loss / len(valid_loader)
         avg_psnr /= len(valid_loader)
         avg_ssim /= len(valid_loader)
         
+        valid_losses.append(avg_loss)
         valid_psnrs.append(avg_psnr)
         valid_ssims.append(avg_ssim)
         
@@ -102,21 +109,27 @@ def train():
             torch.save(model.state_dict(), os.path.join(config.checkpoint_dir, f'model_epoch_{epoch+1}.pth'))
     
     # 绘制训练曲线
-    plt.figure(figsize=(15, 5))
+    plt.figure(figsize=(10, 10))
     
-    plt.subplot(1, 3, 1)
+    plt.subplot(2, 2, 1)
     plt.plot(train_losses)
     plt.title('Training Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     
-    plt.subplot(1, 3, 2)
+    plt.subplot(2, 2, 2)
+    plt.plot(valid_losses)
+    plt.title('Valid Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+
+    plt.subplot(2, 2, 3)
     plt.plot(valid_psnrs)
     plt.title('Validation PSNR')
     plt.xlabel('Epoch')
     plt.ylabel('PSNR (dB)')
     
-    plt.subplot(1, 3, 3)
+    plt.subplot(2, 2, 4)
     plt.plot(valid_ssims)
     plt.title('Validation SSIM')
     plt.xlabel('Epoch')
