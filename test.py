@@ -7,6 +7,7 @@ from torchvision.utils import make_grid
 from tqdm import tqdm
 
 from models.srcnn import SRCNN
+from models.srcnn import ImprovedSRCNN
 from utils.data_utils import SRDataset, calculate_psnr, calculate_ssim
 from config import Config
 
@@ -15,12 +16,14 @@ def test():
     device = torch.device(config.device if torch.cuda.is_available() else 'cpu')
     
     # 加载模型
-    model = SRCNN(config).to(device)
-    model.load_state_dict(torch.load(os.path.join(config.checkpoint_dir, 'best_model.pth')))
+    # model = SRCNN(config).to(device)
+    model = ImprovedSRCNN().to(device)
+    model.load_state_dict(torch.load(os.path.join(config.checkpoint_dir, 'best_model1.pth')))
     model.eval()
     
     # 加载测试数据
     test_dataset = SRDataset(config.valid_data_path, config.scale_factor, is_train=False)
+    # test_dataset = SRDataset(r'D:\Project\SRCNN\dataset\valid',3,is_train=False)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
     
     # 创建结果保存目录
@@ -32,13 +35,13 @@ def test():
     total_ssim = 0
     
     with torch.no_grad():
-        for i, (lr_imgs, hr_imgs, img_names) in enumerate(tqdm(test_loader)):
+        for i, (lr_imgs, hr_imgs) in enumerate(tqdm(test_loader)):
             lr_imgs = lr_imgs.to(device)
             hr_imgs = hr_imgs.to(device)
             
             # 生成超分辨率图像
             sr_imgs = model(lr_imgs)
-            
+
             # 计算评估指标
             psnr = calculate_psnr(sr_imgs, hr_imgs)
             ssim = calculate_ssim(sr_imgs, hr_imgs)
@@ -72,7 +75,7 @@ def test():
                 plt.axis('off')
                 
                 plt.tight_layout()
-                plt.savefig(os.path.join(results_dir, f'comparison_{img_names[0]}'))
+                plt.savefig(os.path.join(results_dir, f'comparison_{i}'))
                 plt.close()
     
     # 计算平均指标

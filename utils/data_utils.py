@@ -17,12 +17,15 @@ class SRDataset(Dataset):
         
         if is_train:
             self.transform = transforms.Compose([
+                transforms.Resize((840,840)),
                 transforms.RandomCrop(patch_size),
                 transforms.ToTensor()
             ])
         else:
-            self.transform = transforms.ToTensor()
-    
+            self.transform = transforms.Compose([
+                transforms.Resize((840,840)),
+                transforms.ToTensor()
+            ])    
     def __len__(self):
         return len(self.image_files)
     

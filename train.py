@@ -7,6 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from models.srcnn import SRCNN
+from models.srcnn import ImprovedSRCNN
 from utils.data_utils import SRDataset, calculate_psnr, calculate_ssim
 from config import Config
 
@@ -18,8 +19,10 @@ def train():
     os.makedirs(config.checkpoint_dir, exist_ok=True)
     
     # 初始化模型
-    model = SRCNN(config).to(device)
+    # model = SRCNN(config).to(device)
+    model = ImprovedSRCNN().to(device)
     criterion = nn.MSELoss()
+    # criterion = nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     
     # 加载数据
@@ -59,6 +62,7 @@ def train():
                 pbar.set_postfix({'loss': loss.item()})
         
         avg_loss = epoch_loss / len(train_loader)
+        print(f'Training Loss: {avg_loss:.4f}')
         train_losses.append(avg_loss)
         writer.add_scalar('Loss/train', avg_loss, epoch)
         
@@ -94,8 +98,7 @@ def train():
         writer.add_scalar('PSNR/valid', avg_psnr, epoch)
         writer.add_scalar('SSIM/valid', avg_ssim, epoch)
         
-        print(f'Epoch {epoch+1}/{config.num_epochs}:')
-        print(f'Average Loss: {avg_loss:.4f}')
+        print(f'Validate Loss: {avg_loss:.4f}')
         print(f'Average PSNR: {avg_psnr:.2f} dB')
         print(f'Average SSIM: {avg_ssim:.4f}')
         
@@ -105,8 +108,8 @@ def train():
             torch.save(model.state_dict(), os.path.join(config.checkpoint_dir, 'best_model.pth'))
         
         # 定期保存模型
-        if (epoch + 1) % config.save_interval == 0:
-            torch.save(model.state_dict(), os.path.join(config.checkpoint_dir, f'model_epoch_{epoch+1}.pth'))
+        # if (epoch + 1) % config.save_interval == 0:
+        #     torch.save(model.state_dict(), os.path.join(config.checkpoint_dir, f'model_epoch_{epoch+1}.pth'))
     
     # 绘制训练曲线
     plt.figure(figsize=(10, 10))

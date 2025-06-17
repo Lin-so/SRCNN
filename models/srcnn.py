@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class SRCNN(nn.Module):
     def __init__(self, config):
@@ -25,3 +26,42 @@ class SRCNN(nn.Module):
         x = self.non_linear_mapping(x)
         x = self.reconstruction(x)
         return x 
+    
+class ImprovedSRCNN(nn.Module):
+    def __init__(self, upscale=3):
+        super().__init__()
+        # 特征提取
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, 9, padding=4),
+            nn.ReLU(),
+            nn.Conv2d(64, 32, 5, padding=2),
+            nn.ReLU(),
+        )
+        # 残差块
+        self.resblocks = nn.Sequential(
+            *[ResBlock(32) for _ in range(3)]
+        )
+
+        # 重建层
+        self.reconstruction = nn.Conv2d(32, 3, kernel_size=3, padding=1)
+
+
+    def forward(self, x):
+        x = self.features(x)
+
+        x = self.resblocks(x)
+
+        x = self.reconstruction(x)
+        return x
+
+class ResBlock(nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(channels, channels, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(channels, channels, 3, padding=1),
+        )
+    
+    def forward(self, x):
+        return x + self.conv(x)

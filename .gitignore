@@ -1,0 +1,6 @@
+/dataset
+/runs
+/results
+/checkpoints
+**/__pycache__
+training_curves.png
